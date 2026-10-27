@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Pengurusan Kunci Makmal dan Kelas</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:    #1e3a5f;
+      --primary-lt: #2a5298;
+      --accent:     #2563eb;
+      --success:    #16a34a;
+      --danger:     #dc2626;
+      --warning:    #d97706;
+      --bg:         #f1f5f9;
+      --surface:    #ffffff;
+      --border:     #e2e8f0;
+      --text:       #1e293b;
+      --muted:      #64748b;
+      --sidebar-w:  220px;
+    }
+
+    body {
+      font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      background: var(--primary);
+      color: #fff;
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 100;
+      box-shadow: 0 2px 8px rgba(0,0,0,.25);
+    }
+    header h1 {
+      font-size: 15px;
+      font-weight: 600;
+      letter-spacing: .3px;
+    }
+    header h1 span { opacity: .65; font-weight: 400; }
+    #jamHeader { font-size: 13px; opacity: .85; font-variant-numeric: tabular-nums; }
+
+    /* ── LAYOUT ── */
+    #app { display: flex; padding-top: 56px; min-height: 100vh; }
+
+    /* ── SIDEBAR ── */
+    nav#sidebar {
+      width: var(--sidebar-w);
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      position: fixed;
+      top: 56px; bottom: 0; left: 0;
+      overflow-y: auto;
+      padding: 16px 0;
+    }
+    nav#sidebar .nav-section {
+      padding: 4px 16px 2px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+    }
+    nav#sidebar button {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 20px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 13.5px;
+      color: var(--text);
+      text-align: left;
+      transition: background .15s, color .15s;
+    }
+    nav#sidebar button:hover { background: #f1f5f9; color: var(--accent); }
+    nav#sidebar button.aktif {
+      background: #eff6ff;
+      color: var(--accent);
+      font-weight: 600;
+      border-right: 3px solid var(--accent);
+    }
+    nav#sidebar button .ikon { font-size: 16px; width: 20px; text-align: center; }
+
+    /* ── MAIN CONTENT ── */
+    main {
+      margin-left: var(--sidebar-w);
+      flex: 1;
+      padding: 24px;
+      min-width: 0;
+    }
+
+    /* ── PANELS ── */
+    .panel { display: none; }
+    .panel.aktif { display: block; }
+
+    .panel-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    .panel-header h2 { font-size: 20px; font-weight: 700; color: var(--primary); }
+    .panel-header p { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 13px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* ── STAT CARDS ── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px,1fr)); gap: 14px; margin-bottom: 20px; }
+    .stat-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      border-left: 4px solid var(--accent);
+    }
+    .stat-card.hijau { border-left-color: var(--success); }
+    .stat-card.merah { border-left-color: var(--danger); }
+    .stat-card.oren  { border-left-color: var(--warning); }
+    .stat-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .stat-val   { font-size: 28px; font-weight: 700; color: var(--primary); margin-top: 2px; }
+
+    /* ── GRID KUNCI ── */
+    .kunci-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr)); gap: 10px; }
+    .kunci-kad {
+      border-radius: 8px;
+      padding: 12px 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+    }
+    .kunci-kad.tersedia { background: #f0fdf4; border-color: #86efac; }
+    .kunci-kad.dipinjam { background: #fef2f2; border-color: #fca5a5; }
+    .kunci-kad .kunci-label { font-weight: 600; font-size: 13px; color: var(--primary); }
+    .kunci-kad .kunci-status {
+      font-size: 11px;
+      font-weight: 600;
+      margin-top: 4px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      display: inline-block;
+    }
+    .kunci-kad.tersedia .kunci-status { background: #dcfce7; color: #15803d; }
+    .kunci-kad.dipinjam .kunci-status { background: #fee2e2; color: #b91c1c; }
+    .kunci-kad .kunci-peminjam { font-size: 11px; color: var(--muted); margin-top: 5px; line-height: 1.4; }
+
+    /* ── GRID DUA KOLUM ── */
+    .dua-kolum { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 760px) { .dua-kolum { grid-template-columns: 1fr; } }
+
+    /* ── FORM ── */
+    .form-kump { margin-bottom: 16px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 5px; color: var(--text); }
+    .form-label .wajib { color: var(--danger); }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13.5px;
+      color: var(--text);
+      background: #fff;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37,99,235,.1);
+    }
+    .form-input.ralat { border-color: var(--danger); }
+    .nama-auto {
+      margin-top: 6px;
+      font-size: 13px;
+      min-height: 20px;
+      font-weight: 600;
+    }
+    .nama-auto.ok   { color: var(--success); }
+    .nama-auto.err  { color: var(--danger); }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-size: 13.5px;
+      font-weight: 600;
+      transition: opacity .15s, background .15s;
+    }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-primary   { background: var(--accent); color: #fff; }
+    .btn-primary:hover:not(:disabled)   { background: #1d4ed8; }
+    .btn-success   { background: var(--success); color: #fff; }
+    .btn-success:hover:not(:disabled)   { background: #15803d; }
+    .btn-danger    { background: var(--danger); color: #fff; }
+    .btn-danger:hover:not(:disabled)    { background: #b91c1c; }
+    .btn-warning   { background: var(--warning); color: #fff; }
+    .btn-warning:hover:not(:disabled)   { background: #b45309; }
+    .btn-outline   { background: #fff; color: var(--text); border: 1px solid var(--border); }
+    .btn-outline:hover { background: var(--bg); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+
+    /* ── ALERT ── */
+    .alert {
+      padding: 10px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 14px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert.show { display: flex; }
+    .alert-success { background: #f0fdf4; color: #15803d; border: 1px solid #86efac; }
+    .alert-danger  { background: #fef2f2; color: #b91c1c; border: 1px solid #fca5a5; }
+    .alert-warning { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+
+    /* ── TABLE ── */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th { background: var(--bg); padding: 9px 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--border); white-space: nowrap; }
+    td { padding: 9px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8fafc; }
+    .badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .3px;
+    }
+    .badge-ambil  { background: #dbeafe; color: #1d4ed8; }
+    .badge-pulang { background: #dcfce7; color: #15803d; }
+
+    /* ── SEARCH ── */
+    .search-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .search-bar .form-input { max-width: 320px; }
+
+    /* ── SECTION TITLE ── */
+    .seksyen-tajuk {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 20px 0 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .seksyen-tajuk::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── PENSYARAH TABLE ── */
+    .p-row td:last-child { text-align: right; }
+
+    /* ── EMPTY STATE ── */
+    .kosong { text-align: center; padding: 32px; color: var(--muted); font-size: 14px; }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 640px) {
+      nav#sidebar { width: 100%; height: auto; position: relative; top: 0; border-right: none; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; padding: 8px; }
+      nav#sidebar button { width: auto; flex: 1 1 auto; padding: 8px 12px; font-size: 12px; }
+      nav#sidebar .nav-section { display: none; }
+      main { margin-left: 0; }
+      #app { flex-direction: column; }
+    }
+
+    /* ── MODAL ── */
+    .modal-backdrop {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-backdrop.show { display: flex; }
+    .modal {
+      background: #fff;
+      border-radius: 10px;
+      padding: 28px;
+      max-width: 400px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    .modal h3 { font-size: 16px; margin-bottom: 10px; color: var(--primary); }
+    .modal p  { font-size: 13.5px; color: var(--muted); margin-bottom: 20px; line-height: 1.6; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ HEADER ══════════════════ -->
+<header>
+  <h1>🔑 Sistem Pengurusan Kunci <span>Makmal &amp; Kelas</span></h1>
+  <div id="jamHeader">—</div>
+</header>
+
+<div id="app">
+
+  <!-- ══════════════════ SIDEBAR ══════════════════ -->
+  <nav id="sidebar">
+    <div class="nav-section">Utama</div>
+    <button class="aktif" onclick="tunjukPanel('dashboard')">
+      <span class="ikon">📊</span> Dashboard
+    </button>
+    <button onclick="tunjukPanel('statusKunci')">
+      <span class="ikon">🗝️</span> Status Kunci
+    </button>
+    <div class="nav-section" style="margin-top:8px">Transaksi</div>
+    <button onclick="tunjukPanel('ambilKunci')">
+      <span class="ikon">📤</span> Pengambilan Kunci
+    </button>
+    <button onclick="tunjukPanel('pulangKunci')">
+      <span class="ikon">📥</span> Pemulangan Kunci
+    </button>
+    <div class="nav-section" style="margin-top:8px">Laporan</div>
+    <button onclick="tunjukPanel('rekod')">
+      <span class="ikon">📋</span> Rekod Transaksi
+    </button>
+    <div class="nav-section" style="margin-top:8px">Sistem</div>
+    <button onclick="tunjukPanel('tetapan')">
+      <span class="ikon">⚙️</span> Tetapan Data
+    </button>
+  </nav>
+
+  <!-- ══════════════════ MAIN ══════════════════ -->
+  <main>
+
+    <!-- ── PANEL: DASHBOARD ── -->
+    <section id="panel-dashboard" class="panel aktif">
+      <div class="panel-header">
+        <h2>Dashboard</h2>
+        <p>Ringkasan status kunci makmal dan kelas</p>
+      </div>
+
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-label">Jumlah Makmal</div>
+          <div class="stat-val" id="d-jmlMakmal">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Jumlah Kelas</div>
+          <div class="stat-val" id="d-jmlKelas">—</div>
+        </div>
+        <div class="stat-card hijau">
+          <div class="stat-label">Kunci Tersedia</div>
+          <div class="stat-val" id="d-tersedia">—</div>
+        </div>
+        <div class="stat-card merah">
+          <div class="stat-label">Kunci Dipinjam</div>
+          <div class="stat-val" id="d-dipinjam">—</div>
+        </div>
+      </div>
+
+      <div class="dua-kolum">
+        <div class="card">
+          <div class="card-title">Status Makmal</div>
+          <div class="kunci-grid" id="d-gridMakmal"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Status Kelas</div>
+          <div class="kunci-grid" id="d-gridKelas"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:20px">
+        <div class="card-title">5 Transaksi Terkini</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Masa</th><th>ID</th><th>Nama Pensyarah</th><th>Kunci</th><th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="d-rekodTerkini"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL: STATUS KUNCI ── -->
+    <section id="panel-statusKunci" class="panel">
+      <div class="panel-header">
+        <h2>Status Kunci</h2>
+        <p>Status semua kunci makmal dan kelas</p>
+      </div>
+
+      <div class="seksyen-tajuk">🔬 Makmal</div>
+      <div class="kunci-grid" id="sk-gridMakmal" style="margin-bottom:20px"></div>
+
+      <div class="seksyen-tajuk">🏫 Kelas</div>
+      <div class="kunci-grid" id="sk-gridKelas"></div>
+    </section>
+
+    <!-- ── PANEL: AMBIL KUNCI ── -->
+    <section id="panel-ambilKunci" class="panel">
+      <div class="panel-header">
+        <h2>Pengambilan Kunci</h2>
+        <p>Rekodkan pengambilan kunci oleh pensyarah</p>
+      </div>
+
+      <div style="max-width:520px">
+        <div id="alert-ambil" class="alert"></div>
+
+        <div class="card">
+          <div class="form-kump">
+            <label class="form-label">Pilih Kunci <span class="wajib">*</span></label>
+            <select id="ambil-kunci" class="form-select" onchange="semakBorangAmbil()">
+              <option value="">— Pilih kunci —</option>
+            </select>
+          </div>
+
+          <div class="form-kump">
+            <label class="form-label">ID Pensyarah <span class="wajib">*</span></label>
+            <div style="display:flex;gap:8px;align-items:flex-start">
+              <div style="flex:1">
+                <input id="ambil-idInput" type="text" class="form-input"
+                  placeholder="Taip ID (cth: P001)" maxlength="10"
+                  oninput="syncAmbilInput()" autocomplete="off">
+              </div>
+              <div style="flex:1">
+                <select id="ambil-idPilih" class="form-select" onchange="syncAmbilPilih()">
+                  <option value="">— atau pilih —</option>
+                </select>
+              </div>
+            </div>
+            <div id="ambil-namaAuto" class="nama-auto"></div>
+          </div>
+
+          <button id="btn-ambil" class="btn btn-primary" onclick="ambilKunci()" disabled>
+            📤 Ambil Kunci
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL: PULANG KUNCI ── -->
+    <section id="panel-pulangKunci" class="panel">
+      <div class="panel-header">
+        <h2>Pemulangan Kunci</h2>
+        <p>Rekodkan pemulangan kunci oleh pensyarah</p>
+      </div>
+
+      <div style="max-width:520px">
+        <div id="alert-pulang" class="alert"></div>
+
+        <div class="card">
+          <div class="form-kump">
+            <label class="form-label">Pilih Kunci Dipinjam <span class="wajib">*</span></label>
+            <select id="pulang-kunci" class="form-select" onchange="isiMaklumatPulang()">
+              <option value="">— Pilih kunci —</option>
+            </select>
+          </div>
+
+          <div class="form-kump">
+            <label class="form-label">Peminjam Semasa</label>
+            <div id="pulang-maklumat" style="padding:10px 14px;background:var(--bg);border-radius:6px;font-size:13px;color:var(--muted);min-height:42px">
+              Pilih kunci di atas untuk melihat maklumat peminjam.
+            </div>
+          </div>
+
+          <button id="btn-pulang" class="btn btn-success" onclick="pulangKunci()" disabled>
+            📥 Pulang Kunci
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL: REKOD ── -->
+    <section id="panel-rekod" class="panel">
+      <div class="panel-header">
+        <h2>Rekod Transaksi</h2>
+        <p>Sejarah semua pengambilan dan pemulangan kunci</p>
+      </div>
+
+      <div class="search-bar">
+        <input id="carian-input" type="text" class="form-input"
+          placeholder="Cari ID, nama pensyarah atau kunci…"
+          oninput="renderRekod()">
+        <button class="btn btn-outline" onclick="document.getElementById('carian-input').value='';renderRekod()">
+          Kosongkan
+        </button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th><th>Tarikh &amp; Masa</th><th>ID</th>
+                <th>Nama Pensyarah</th><th>Kunci</th><th>Tindakan</th>
+              </tr>
+            </thead>
+            <tbody id="rekod-tbody"></tbody>
+          </table>
+        </div>
+        <div id="rekod-kosong" class="kosong" style="display:none">Tiada rekod ditemui.</div>
+      </div>
+    </section>
+
+    <!-- ── PANEL: TETAPAN ── -->
+    <section id="panel-tetapan" class="panel">
+      <div class="panel-header">
+        <h2>Tetapan Data</h2>
+        <p>Uruskan senarai pensyarah dan data sistem</p>
+      </div>
+
+      <!-- Tambah Pensyarah -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Tambah Pensyarah Baru</div>
+        <div id="alert-tetapan" class="alert"></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div style="flex:1;min-width:120px">
+            <label class="form-label">ID Pensyarah</label>
+            <input id="t-idBaru" type="text" class="form-input" placeholder="cth: P011" maxlength="10">
+          </div>
+          <div style="flex:3;min-width:180px">
+            <label class="form-label">Nama Penuh</label>
+            <input id="t-namaBaru" type="text" class="form-input" placeholder="Nama penuh pensyarah">
+          </div>
+          <div>
+            <button class="btn btn-primary" onclick="tambahPensyarah()">+ Tambah</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Senarai Pensyarah -->
+      <div class="card" style="margin-bottom:20px">
+        <div class="card-title">Senarai Pensyarah Berdaftar</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Nama Pensyarah</th><th>Tindakan</th></tr>
+            </thead>
+            <tbody id="t-pensyarahTbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Sandaran & Pemulihan -->
+      <div class="card">
+        <div class="card-title">Sandaran &amp; Pemulihan Data</div>
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">
+          Eksport semua data (kunci, rekod, pensyarah) ke fail JSON untuk sandaran.
+          Import semula untuk memulihkan data.
+        </p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <button class="btn btn-primary" onclick="eksportData()">⬇️ Eksport JSON</button>
+          <label class="btn btn-outline" style="cursor:pointer">
+            ⬆️ Import JSON
+            <input type="file" accept=".json" style="display:none" onchange="importData(event)">
+          </label>
+          <button class="btn btn-danger" onclick="sahkanReset()">🔄 Set Semula Data Contoh</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div><!-- #app -->
+
+<!-- ══════════════════ MODAL PENGESAHAN ══════════════════ -->
+<div id="modal-backdrop" class="modal-backdrop">
+  <div class="modal">
+    <h3 id="modal-tajuk">Pengesahan</h3>
+    <p id="modal-mesej">Adakah anda pasti?</p>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="tutupModal()">Batal</button>
+      <button id="modal-ok" class="btn btn-danger" onclick="">Ya, Teruskan</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ JAVASCRIPT ══════════════════ -->
+<script>
+'use strict';
+
+/* ─────────────── DATA AWAL ─────────────── */
+
+const MAKMAL_DEF = [
+  'M01','M02','M03','M04','M05','M06','M07','M08','M09','M10'
+];
+const KELAS_DEF = [
+  'K01','K02','K03','K04','K05','K06','K07','K08','K09','K10'
+];
+const LABEL_KUNCI = {
+  M01:'Makmal 1', M02:'Makmal 2', M03:'Makmal 3', M04:'Makmal 4', M05:'Makmal 5',
+  M06:'Makmal 6', M07:'Makmal 7', M08:'Makmal 8', M09:'Makmal 9', M10:'Makmal 10',
+  K01:'Kelas 1',  K02:'Kelas 2',  K03:'Kelas 3',  K04:'Kelas 4',  K05:'Kelas 5',
+  K06:'Kelas 6',  K07:'Kelas 7',  K08:'Kelas 8',  K09:'Kelas 9',  K10:'Kelas 10'
+};
+const PENSYARAH_DEF = {
+  'P001': 'Contoh: Ahmad bin Abdullah',
+  'P002': 'Contoh: Siti Rahimah binti Kamal',
+  'P003': 'Contoh: Dr. Hafizuddin bin Yusof',
+  'P004': 'Contoh: Nurul Huda binti Ismail',
+  'P005': 'Contoh: Mohd Farid bin Zainal',
+  'P006': 'Contoh: Zulkifli bin Hassan',
+  'P007': 'Contoh: Haslinda binti Mohd Noor',
+  'P008': 'Contoh: Dr. Rashidah binti Omar',
+  'P009': 'Contoh: Khairul Anwar bin Daud',
+  'P010': 'Contoh: Norashikin binti Abdul Razak'
+};
+
+/* ─────────────── KUNCI LOCALSTORAGE ─────────────── */
+
+const LS = {
+  KUNCI:      'skm_kunci',
+  REKOD:      'skm_rekod',
+  PENSYARAH:  'skm_pensyarah'
+};
+
+/* ─────────────── INISIALISASI ─────────────── */
+
+function initData() {
+  if (!localStorage.getItem(LS.KUNCI)) {
+    const kunci = {};
+    [...MAKMAL_DEF, ...KELAS_DEF].forEach(k => { kunci[k] = null; });
+    localStorage.setItem(LS.KUNCI, JSON.stringify(kunci));
+  }
+  if (!localStorage.getItem(LS.REKOD)) {
+    localStorage.setItem(LS.REKOD, JSON.stringify([]));
+  }
+  if (!localStorage.getItem(LS.PENSYARAH)) {
+    localStorage.setItem(LS.PENSYARAH, JSON.stringify(PENSYARAH_DEF));
+  }
+}
+
+/* ─────────────── FUNGSI DATA ─────────────── */
+
+function getKunci()    { return JSON.parse(localStorage.getItem(LS.KUNCI))    || {}; }
+function getRekod()    { return JSON.parse(localStorage.getItem(LS.REKOD))    || []; }
+function getPensyarah(){ return JSON.parse(localStorage.getItem(LS.PENSYARAH))|| {}; }
+
+function setKunci(data)    { localStorage.setItem(LS.KUNCI,     JSON.stringify(data)); }
+function setRekod(data)    { localStorage.setItem(LS.REKOD,     JSON.stringify(data)); }
+function setPensyarah(data){ localStorage.setItem(LS.PENSYARAH, JSON.stringify(data)); }
+
+function getNamaPensyarah(id) {
+  const p = getPensyarah();
+  return p[id] || null;
+}
+
+function janaTxnId() {
+  return 'TXN-' + Date.now() + '-' + Math.random().toString(36).slice(2,6).toUpperCase();
+}
+
+function formatMasa(isoStr) {
+  const d = new Date(isoStr);
+  const tarikh = d.toLocaleDateString('ms-MY', { day:'2-digit', month:'2-digit', year:'numeric' });
+  const masa   = d.toLocaleTimeString('ms-MY', { hour:'2-digit', minute:'2-digit', hour12: false });
+  return tarikh + ' ' + masa;
+}
+
+function addRekod(txn) {
+  const rekod = getRekod();
+  rekod.push(txn);
+  setRekod(rekod);
+}
+
+/* ─────────────── JAM HEADER ─────────────── */
+
+function kemaskiniJam() {
+  const now = new Date();
+  const hari = ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'][now.getDay()];
+  const tStr = now.toLocaleTimeString('ms-MY', { hour:'2-digit', minute:'2-digit', second:'2-digit', hour12: false });
+  const dStr = now.toLocaleDateString('ms-MY', { day:'2-digit', month:'long', year:'numeric' });
+  document.getElementById('jamHeader').textContent = hari + ', ' + dStr + '  ' + tStr;
+}
+setInterval(kemaskiniJam, 1000);
+kemaskiniJam();
+
+/* ─────────────── NAVIGASI ─────────────── */
+
+const PANELS = ['dashboard','statusKunci','ambilKunci','pulangKunci','rekod','tetapan'];
+
+function tunjukPanel(id) {
+  PANELS.forEach(p => {
+    document.getElementById('panel-' + p).classList.toggle('aktif', p === id);
+  });
+  document.querySelectorAll('#sidebar button').forEach(btn => {
+    btn.classList.toggle('aktif', btn.getAttribute('onclick') === "tunjukPanel('" + id + "')");
+  });
+  // render panel berkenaan
+  if (id === 'dashboard')   renderDashboard();
+  if (id === 'statusKunci') renderStatusKunci();
+  if (id === 'ambilKunci')  renderBorangAmbil();
+  if (id === 'pulangKunci') renderBorangPulang();
+  if (id === 'rekod')       renderRekod();
+  if (id === 'tetapan')     renderSenaraipensyarah();
+}
+
+/* ─────────────── PANEL: DASHBOARD ─────────────── */
+
+function renderDashboard() {
+  const kunci    = getKunci();
+  const semua    = Object.keys(kunci);
+  const dipinjam = semua.filter(k => kunci[k] !== null);
+  const tersedia = semua.filter(k => kunci[k] === null);
+  const makmal   = semua.filter(k => k.startsWith('M'));
+  const kelas    = semua.filter(k => k.startsWith('K'));
+
+  document.getElementById('d-jmlMakmal').textContent = makmal.length;
+  document.getElementById('d-jmlKelas').textContent  = kelas.length;
+  document.getElementById('d-tersedia').textContent  = tersedia.length;
+  document.getElementById('d-dipinjam').textContent  = dipinjam.length;
+
+  document.getElementById('d-gridMakmal').innerHTML = makmal.map(k => buatKadMini(k, kunci[k])).join('');
+  document.getElementById('d-gridKelas').innerHTML  = kelas.map(k => buatKadMini(k, kunci[k])).join('');
+
+  const rekod  = getRekod();
+  const terkini = [...rekod].reverse().slice(0, 5);
+  const tbody  = document.getElementById('d-rekodTerkini');
+  if (terkini.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="kosong">Tiada transaksi lagi.</td></tr>';
+  } else {
+    tbody.innerHTML = terkini.map(r =>
+      `<tr>
+        <td>${formatMasa(r.masa)}</td>
+        <td><strong>${r.idPensyarah}</strong></td>
+        <td>${r.namaPensyarah}</td>
+        <td>${r.labelKunci}</td>
+        <td><span class="badge badge-${r.tindakan === 'AMBIL' ? 'ambil' : 'pulang'}">${r.tindakan}</span></td>
+      </tr>`
+    ).join('');
+  }
+}
+
+function buatKadMini(kod, peminjamId) {
+  const label  = LABEL_KUNCI[kod] || kod;
+  const cls    = peminjamId ? 'dipinjam' : 'tersedia';
+  const status = peminjamId ? 'Dipinjam' : 'Tersedia';
+  return `<div class="kunci-kad ${cls}">
+    <div class="kunci-label">${label}</div>
+    <div><span class="kunci-status">${status}</span></div>
+  </div>`;
+}
+
+/* ─────────────── PANEL: STATUS KUNCI ─────────────── */
+
+function renderStatusKunci() {
+  const kunci  = getKunci();
+  const p      = getPensyarah();
+  const makmal = Object.keys(kunci).filter(k => k.startsWith('M'));
+  const kelas  = Object.keys(kunci).filter(k => k.startsWith('K'));
+
+  function buatKad(kod) {
+    const peminjamId = kunci[kod];
+    const label      = LABEL_KUNCI[kod] || kod;
+    const cls        = peminjamId ? 'dipinjam' : 'tersedia';
+    const status     = peminjamId ? 'Dipinjam' : 'Tersedia';
+    let info = '';
+    if (peminjamId) {
+      const nama = p[peminjamId] || peminjamId;
+      info = `<div class="kunci-peminjam">👤 ${peminjamId}<br>${nama}</div>`;
+    }
+    return `<div class="kunci-kad ${cls}">
+      <div class="kunci-label">${label}</div>
+      <div><span class="kunci-status">${status}</span></div>
+      ${info}
+    </div>`;
+  }
+
+  document.getElementById('sk-gridMakmal').innerHTML = makmal.map(buatKad).join('');
+  document.getElementById('sk-gridKelas').innerHTML  = kelas.map(buatKad).join('');
+}
+
+/* ─────────────── PANEL: AMBIL KUNCI ─────────────── */
+
+let ambilIdSah = false;
+
+function renderBorangAmbil() {
+  const kunci = getKunci();
+  const p     = getPensyarah();
+
+  // Dropdown kunci tersedia
+  const selKunci = document.getElementById('ambil-kunci');
+  const nilaKunci = selKunci.value;
+  selKunci.innerHTML = '<option value="">— Pilih kunci —</option>';
+  Object.keys(kunci).filter(k => kunci[k] === null).forEach(k => {
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = LABEL_KUNCI[k] || k;
+    if (k === nilaKunci) opt.selected = true;
+    selKunci.appendChild(opt);
+  });
+
+  // Dropdown pensyarah
+  const selP = document.getElementById('ambil-idPilih');
+  const nilaP = selP.value;
+  selP.innerHTML = '<option value="">— atau pilih —</option>';
+  Object.entries(p).forEach(([id, nama]) => {
+    const opt = document.createElement('option');
+    opt.value = id;
+    opt.textContent = id + ' — ' + nama;
+    if (id === nilaP) opt.selected = true;
+    selP.appendChild(opt);
+  });
+
+  ambilIdSah = false;
+  semakBorangAmbil();
+}
+
+function syncAmbilInput() {
+  const val = document.getElementById('ambil-idInput').value.trim().toUpperCase();
+  document.getElementById('ambil-idPilih').value = val;
+  semakAmbilId(val);
+}
+
+function syncAmbilPilih() {
+  const val = document.getElementById('ambil-idPilih').value;
+  document.getElementById('ambil-idInput').value = val;
+  semakAmbilId(val);
+}
+
+function semakAmbilId(id) {
+  const el = document.getElementById('ambil-namaAuto');
+  const input = document.getElementById('ambil-idInput');
+  if (!id) {
+    el.textContent = '';
+    el.className = 'nama-auto';
+    ambilIdSah = false;
+    semakBorangAmbil();
+    return;
+  }
+  const nama = getNamaPensyarah(id);
+  if (nama) {
+    el.textContent = '✓ ' + nama;
+    el.className = 'nama-auto ok';
+    input.classList.remove('ralat');
+    ambilIdSah = true;
+  } else {
+    el.textContent = '✗ ID pensyarah tidak dijumpai dalam sistem.';
+    el.className = 'nama-auto err';
+    input.classList.add('ralat');
+    ambilIdSah = false;
+  }
+  semakBorangAmbil();
+}
+
+function semakBorangAmbil() {
+  const kunci = document.getElementById('ambil-kunci').value;
+  document.getElementById('btn-ambil').disabled = !(ambilIdSah && kunci);
+}
+
+function ambilKunci() {
+  const kodKunci = document.getElementById('ambil-kunci').value;
+  const id       = document.getElementById('ambil-idInput').value.trim().toUpperCase();
+  const el       = document.getElementById('alert-ambil');
+
+  if (!kodKunci || !ambilIdSah) return;
+
+  const kunci = getKunci();
+  if (kunci[kodKunci] !== null) {
+    tunjukAlert(el, 'danger', '⚠️ Kunci ' + (LABEL_KUNCI[kodKunci]||kodKunci) + ' sudah dipinjam oleh ' + (getNamaPensyarah(kunci[kodKunci]) || kunci[kodKunci]) + '.');
+    return;
+  }
+
+  kunci[kodKunci] = id;
+  setKunci(kunci);
+
+  addRekod({
+    id:            janaTxnId(),
+    masa:          new Date().toISOString(),
+    idPensyarah:   id,
+    namaPensyarah: getNamaPensyarah(id),
+    kunci:         kodKunci,
+    labelKunci:    LABEL_KUNCI[kodKunci] || kodKunci,
+    tindakan:      'AMBIL'
+  });
+
+  tunjukAlert(el, 'success', '✅ ' + (LABEL_KUNCI[kodKunci]||kodKunci) + ' berjaya diambil oleh ' + getNamaPensyarah(id) + ' (' + id + ').');
+
+  // Reset borang
+  document.getElementById('ambil-kunci').value   = '';
+  document.getElementById('ambil-idInput').value = '';
+  document.getElementById('ambil-idPilih').value = '';
+  document.getElementById('ambil-namaAuto').textContent = '';
+  document.getElementById('ambil-namaAuto').className   = 'nama-auto';
+  document.getElementById('ambil-idInput').classList.remove('ralat');
+  ambilIdSah = false;
+  renderBorangAmbil();
+}
+
+/* ─────────────── PANEL: PULANG KUNCI ─────────────── */
+
+function renderBorangPulang() {
+  const kunci   = getKunci();
+  const p       = getPensyarah();
+  const selKunci = document.getElementById('pulang-kunci');
+  const nilaKunci = selKunci.value;
+
+  selKunci.innerHTML = '<option value="">— Pilih kunci —</option>';
+  Object.keys(kunci).filter(k => kunci[k] !== null).forEach(k => {
+    const id  = kunci[k];
+    const opt = document.createElement('option');
+    opt.value = k;
+    opt.textContent = (LABEL_KUNCI[k]||k) + ' — ' + id;
+    if (k === nilaKunci) opt.selected = true;
+    selKunci.appendChild(opt);
+  });
+
+  isiMaklumatPulang();
+}
+
+function isiMaklumatPulang() {
+  const kodKunci = document.getElementById('pulang-kunci').value;
+  const el       = document.getElementById('pulang-maklumat');
+  const btn      = document.getElementById('btn-pulang');
+
+  if (!kodKunci) {
+    el.innerHTML = '<span style="color:var(--muted)">Pilih kunci di atas untuk melihat maklumat peminjam.</span>';
+    btn.disabled = true;
+    return;
+  }
+
+  const kunci = getKunci();
+  const id    = kunci[kodKunci];
+  if (!id) {
+    el.innerHTML = '<span style="color:var(--success)">✅ Kunci ini sudah tersedia.</span>';
+    btn.disabled = true;
+    return;
+  }
+
+  const nama = getNamaPensyarah(id) || id;
+  el.innerHTML = `<strong>${id}</strong> — ${nama}`;
+  btn.disabled = false;
+}
+
+function pulangKunci() {
+  const kodKunci = document.getElementById('pulang-kunci').value;
+  const el       = document.getElementById('alert-pulang');
+  if (!kodKunci) return;
+
+  const kunci = getKunci();
+  const id    = kunci[kodKunci];
+  if (!id) {
+    tunjukAlert(el, 'warning', '⚠️ Kunci ini sudah tersedia.');
+    return;
+  }
+
+  const nama = getNamaPensyarah(id);
+
+  addRekod({
+    id:            janaTxnId(),
+    masa:          new Date().toISOString(),
+    idPensyarah:   id,
+    namaPensyarah: nama,
+    kunci:         kodKunci,
+    labelKunci:    LABEL_KUNCI[kodKunci] || kodKunci,
+    tindakan:      'PULANG'
+  });
+
+  kunci[kodKunci] = null;
+  setKunci(kunci);
+
+  tunjukAlert(el, 'success', '✅ ' + (LABEL_KUNCI[kodKunci]||kodKunci) + ' berjaya dipulangkan oleh ' + nama + ' (' + id + ').');
+
+  document.getElementById('pulang-kunci').value = '';
+  renderBorangPulang();
+}
+
+/* ─────────────── PANEL: REKOD ─────────────── */
+
+function renderRekod() {
+  const carian = (document.getElementById('carian-input').value || '').toLowerCase().trim();
+  const rekod  = [...getRekod()].reverse();
+  const tbody  = document.getElementById('rekod-tbody');
+  const kosong = document.getElementById('rekod-kosong');
+
+  const tapis = carian
+    ? rekod.filter(r =>
+        r.idPensyarah.toLowerCase().includes(carian) ||
+        r.namaPensyarah.toLowerCase().includes(carian) ||
+        r.labelKunci.toLowerCase().includes(carian) ||
+        r.kunci.toLowerCase().includes(carian)
+      )
+    : rekod;
+
+  if (tapis.length === 0) {
+    tbody.innerHTML = '';
+    kosong.style.display = 'block';
+    return;
+  }
+
+  kosong.style.display = 'none';
+  tbody.innerHTML = tapis.map((r, i) =>
+    `<tr>
+      <td style="color:var(--muted)">${tapis.length - i}</td>
+      <td style="white-space:nowrap">${formatMasa(r.masa)}</td>
+      <td><strong>${r.idPensyarah}</strong></td>
+      <td>${r.namaPensyarah}</td>
+      <td>${r.labelKunci}</td>
+      <td><span class="badge badge-${r.tindakan === 'AMBIL' ? 'ambil' : 'pulang'}">${r.tindakan}</span></td>
+    </tr>`
+  ).join('');
+}
+
+/* ─────────────── PANEL: TETAPAN ─────────────── */
+
+function renderSenaraipensyarah() {
+  const p     = getPensyarah();
+  const tbody = document.getElementById('t-pensyarahTbody');
+  const entries = Object.entries(p);
+
+  if (entries.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="kosong">Tiada pensyarah berdaftar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = entries.map(([id, nama]) =>
+    `<tr class="p-row">
+      <td><strong>${id}</strong></td>
+      <td>${nama}</td>
+      <td>
+        <button class="btn btn-danger btn-sm" onclick="sahkanPadamPensyarah('${id}')">Padam</button>
+      </td>
+    </tr>`
+  ).join('');
+}
+
+function tambahPensyarah() {
+  const idBaru   = document.getElementById('t-idBaru').value.trim().toUpperCase();
+  const namaBaru = document.getElementById('t-namaBaru').value.trim();
+  const el       = document.getElementById('alert-tetapan');
+
+  if (!idBaru || !namaBaru) {
+    tunjukAlert(el, 'danger', '⚠️ ID dan nama pensyarah tidak boleh kosong.');
+    return;
+  }
+  if (!/^[A-Z][A-Z0-9]{1,9}$/.test(idBaru)) {
+    tunjukAlert(el, 'danger', '⚠️ Format ID tidak sah. Gunakan huruf dan nombor sahaja (cth: P011).');
+    return;
+  }
+
+  const p = getPensyarah();
+  if (p[idBaru]) {
+    tunjukAlert(el, 'danger', '⚠️ ID ' + idBaru + ' sudah wujud dalam sistem.');
+    return;
+  }
+
+  p[idBaru] = namaBaru;
+  setPensyarah(p);
+  tunjukAlert(el, 'success', '✅ Pensyarah ' + idBaru + ' — ' + namaBaru + ' berjaya ditambah.');
+  document.getElementById('t-idBaru').value   = '';
+  document.getElementById('t-namaBaru').value = '';
+  renderSenaraipensyarah();
+}
+
+function sahkanPadamPensyarah(id) {
+  const nama = getNamaPensyarah(id) || id;
+  bukaMod(
+    'Padam Pensyarah',
+    `Adakah anda pasti mahu memadam ${id} — ${nama}?\n\nTindakan ini tidak boleh dibuat asal.`,
+    'danger',
+    () => padamPensyarah(id)
+  );
+}
+
+function padamPensyarah(id) {
+  const p = getPensyarah();
+  delete p[id];
+  setPensyarah(p);
+  const el = document.getElementById('alert-tetapan');
+  tunjukAlert(el, 'success', '✅ Pensyarah ' + id + ' berjaya dipadam.');
+  renderSenaraipensyarah();
+}
+
+/* ─────────────── EKSPORT / IMPORT ─────────────── */
+
+function eksportData() {
+  const data = {
+    versi:     '1.0',
+    masa:      new Date().toISOString(),
+    kunci:     getKunci(),
+    rekod:     getRekod(),
+    pensyarah: getPensyarah()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  const ts   = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+  a.href     = url;
+  a.download = 'sandaran-kunci-' + ts + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(event) {
+  const fail = event.target.files[0];
+  if (!fail) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.kunci || !data.rekod || !data.pensyarah) {
+        alert('❌ Fail JSON tidak sah. Pastikan fail adalah dari sistem ini.');
+        return;
+      }
+      bukaMod(
+        'Import Data',
+        'Data semasa akan digantikan dengan data dari fail ini. Adakah anda pasti mahu meneruskan?',
+        'danger',
+        () => {
+          setKunci(data.kunci);
+          setRekod(data.rekod);
+          setPensyarah(data.pensyarah);
+          renderSenaraipensyarah();
+          const el = document.getElementById('alert-tetapan');
+          tunjukAlert(el, 'success', '✅ Data berjaya dipulihkan dari fail sandaran.');
+        }
+      );
+    } catch (err) {
+      alert('❌ Fail JSON tidak dapat dibaca. Fail mungkin rosak.');
+    }
+  };
+  reader.readAsText(fail);
+  event.target.value = '';
+}
+
+function sahkanReset() {
+  bukaMod(
+    'Set Semula Data',
+    'Semua data semasa (kunci, rekod, pensyarah) akan DIPADAM dan digantikan dengan data contoh awal.\n\nTindakan ini TIDAK BOLEH dibuat asal.',
+    'danger',
+    resetData
+  );
+}
+
+function resetData() {
+  localStorage.removeItem(LS.KUNCI);
+  localStorage.removeItem(LS.REKOD);
+  localStorage.removeItem(LS.PENSYARAH);
+  initData();
+  renderSenaraipensyarah();
+  const el = document.getElementById('alert-tetapan');
+  tunjukAlert(el, 'success', '✅ Data telah ditetapkan semula kepada data contoh awal.');
+}
+
+/* ─────────────── MODAL ─────────────── */
+
+let _modalKallback = null;
+
+function bukaMod(tajuk, mesej, jenisBtn, kallback) {
+  document.getElementById('modal-tajuk').textContent = tajuk;
+  document.getElementById('modal-mesej').textContent = mesej;
+  const btnOk = document.getElementById('modal-ok');
+  btnOk.className = 'btn btn-' + jenisBtn;
+  _modalKallback = kallback;
+  btnOk.onclick = function() { tutupModal(); if (_modalKallback) _modalKallback(); };
+  document.getElementById('modal-backdrop').classList.add('show');
+}
+
+function tutupModal() {
+  document.getElementById('modal-backdrop').classList.remove('show');
+  _modalKallback = null;
+}
+
+// Tutup modal apabila klik luar
+document.getElementById('modal-backdrop').addEventListener('click', function(e) {
+  if (e.target === this) tutupModal();
+});
+
+/* ─────────────── ALERT ─────────────── */
+
+function tunjukAlert(el, jenis, mesej) {
+  el.className = 'alert alert-' + jenis + ' show';
+  el.textContent = mesej;
+  clearTimeout(el._timer);
+  el._timer = setTimeout(() => {
+    el.classList.remove('show');
+  }, 5000);
+}
+
+/* ─────────────── BOOT ─────────────── */
+
+initData();
+renderDashboard();
+</script>
+</body>
+</html>
